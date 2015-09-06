@@ -6,7 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import meteocontroller.dto.PhotoDto;
 
@@ -57,7 +59,8 @@ public class PhotoGetterImpl implements PhotoGetter {
     private void proceedPhotos(List<PhotoDto> newPhotos) {
         for (PhotoDto newPhoto : newPhotos) {
             File file = newPhoto.getFile();
-            newPhoto.setFile(moveFile(TMP_FOLDER_PATH + file.getName(), DATA_FOLDER_PATH + file.getName()));
+
+            newPhoto.setFile(moveFile(TMP_FOLDER_PATH + file.getName(), getFileDataFolderPath(newPhoto)));
         }
     }
 
@@ -87,6 +90,29 @@ public class PhotoGetterImpl implements PhotoGetter {
     private void clearTmpFolder() {
         for (File file : new File(TMP_FOLDER_PATH).listFiles()) {
             file.delete();
+        }
+    }
+
+    private String getFileDataFolderPath(PhotoDto newPhoto) {
+        try {
+            File file = newPhoto.getFile();
+            BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+            long millis = attributes.lastModifiedTime().toMillis();
+            Date created = new Date(millis);
+            int year = created.getYear() + 1900;
+            int month = created.getMonth() + 1;
+            int date = created.getDate();
+
+            String folderPath = DATA_FOLDER_PATH + year + "/" + month + "/" + date + "/" + file.getName();
+
+            File folder = new File(folderPath);
+            if (!folder.exists()) {
+                folder.mkdirs();
+            }
+
+            return folderPath;
+        } catch (IOException ex) {
+            return "";
         }
     }
 
