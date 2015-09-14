@@ -71,12 +71,14 @@ public class PhotoUploaderImpl implements PhotoUploader {
                 MeteoLogger.log("Uploading file '" + mostRecent.getFile().getName() + "' as remote file '" + ftpServerUrl + ":" + ftpServerPort + "/(...)/" + remoteFile + "'.");
             }
         } catch (IOException ex) {
+            MeteoLogger.log(ex);
         } finally {
             if (client.isConnected()) {
                 try {
                     client.logout();
                     client.disconnect();
                 } catch (IOException ex) {
+                    MeteoLogger.log(ex);
                 }
             }
         }
@@ -95,6 +97,7 @@ public class PhotoUploaderImpl implements PhotoUploader {
                     recentPhoto = photo;
                 }
             } catch (IOException ex) {
+                MeteoLogger.log(ex);
             }
         }
         return recentPhoto;

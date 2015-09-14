@@ -1,7 +1,6 @@
 package meteocontroller;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -44,11 +43,9 @@ public class SpringContext {
 
                 line = br.readLine();
             }
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(SpringContext.class.getName()).log(Level.SEVERE, null, ex);
-
         } catch (IOException ex) {
-            Logger.getLogger(SpringContext.class.getName()).log(Level.SEVERE, null, ex);
+            MeteoLogger.log(ex);
+            MeteoLogger.log("Context init failed.");
         }
 
         MeteoLogger.log("Context init successfull.");

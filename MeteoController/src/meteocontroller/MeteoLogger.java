@@ -13,6 +13,8 @@ package meteocontroller;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,6 +34,7 @@ public class MeteoLogger {
         try {
             ownLog(msg);
         } catch (IOException ex) {
+            MeteoLogger.log(ex);
         }
     }
 
@@ -40,13 +43,17 @@ public class MeteoLogger {
         try {
             ex.printStackTrace(getOwnLog());
         } catch (IOException ex1) {
+            MeteoLogger.log(ex1);
         }
     }
 
+    private static DateFormat dateFormatLogFile = new SimpleDateFormat("dd-MM-yyyy");
+    private static DateFormat dateFormatLogEntry = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+
     private static void ownLog(String msg) throws IOException {
         PrintWriter ownLog = getOwnLog();
+        ownLog.write(dateFormatLogEntry.format(new Date()) + " > ");
         ownLog.write(msg);
-        ownLog.print(System.lineSeparator());
         ownLog.print(System.lineSeparator());
         ownLog.flush();
     }
@@ -70,6 +77,6 @@ public class MeteoLogger {
         }
 
         lastLogFileOpen = System.currentTimeMillis();
-        fileLog = new PrintWriter(new FileWriter("migration_log_" + lastLogFileOpen + ".log"));
+        fileLog = new PrintWriter(new FileWriter("meteo_log_" + dateFormatLogFile.format(lastLogFileOpen) + ".log"));
     }
 }
