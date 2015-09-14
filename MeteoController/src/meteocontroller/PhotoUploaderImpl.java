@@ -19,7 +19,7 @@ import org.apache.commons.net.ftp.FTPClient;
  */
 public class PhotoUploaderImpl implements PhotoUploader {
 
-    private Timer timer = new Timer(500);
+    private Timer timer;
 
     private String ftpServerUrl;
     private int ftpServerPort;
@@ -42,13 +42,12 @@ public class PhotoUploaderImpl implements PhotoUploader {
 
     @Override
     public void uploadPhotos(List<PhotoDto> photos) {
-        if (timer.activate()) {
-            uploadPhotosToServer(photos);
-            bufferedPhotos.clear();
-        } else {
-            bufferedPhotos.addAll(photos);
-        }
+        bufferedPhotos.addAll(photos);
 
+        if (timer.activate()) {
+            uploadPhotosToServer(bufferedPhotos);
+            bufferedPhotos.clear();
+        }
     }
 
     private void uploadPhotosToServer(List<PhotoDto> photos) {

@@ -77,8 +77,10 @@ public class PhotoGetterImpl implements PhotoGetter {
         //TODO splitnout posledni cast '.' - aktual zpusob muze selhat .XXXjpg
         String[] suffixes = SUPPORTED_SUFIXES.toLowerCase().split(",");
         for (String suffix : suffixes) {
-            if (filteredPhoto.getFile().getName().toLowerCase().endsWith(suffix)) {
-                return true;
+            if (filteredPhoto != null && filteredPhoto.getFile() != null && filteredPhoto.getFile().getName() != null) {
+                if (filteredPhoto.getFile().getName().toLowerCase().endsWith(suffix)) {
+                    return true;
+                }
             }
         }
         return false;
