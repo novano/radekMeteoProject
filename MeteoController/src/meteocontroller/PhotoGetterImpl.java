@@ -10,6 +10,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
 import meteocontroller.dto.PhotoDto;
 
 /**
@@ -18,10 +19,18 @@ import meteocontroller.dto.PhotoDto;
  */
 public class PhotoGetterImpl implements PhotoGetter {
 
-    private static String SUPPORTED_SUFIXES = "jpg,png,gif,jpeg";
-    private static String SCAN_FOLDER_PATH = "./photosUpload/";
-    private static String TMP_FOLDER_PATH = "./temp/";
-    private static String DATA_FOLDER_PATH = "./data/";
+    private final String SUPPORTED_SUFIXES;
+    private final String SCAN_FOLDER_PATH;
+    private final String TMP_FOLDER_PATH;
+    private final String DATA_FOLDER_PATH;
+
+    public PhotoGetterImpl() {
+        SpringContext context = MeteoController.getContext();
+        SUPPORTED_SUFIXES = context.getProperty("supported.suffixes");
+        SCAN_FOLDER_PATH = context.getProperty("folder.path.scan");
+        TMP_FOLDER_PATH = context.getProperty("folder.path.tmp");
+        DATA_FOLDER_PATH = context.getProperty("folder.path.data");
+    }
 
     @Override
     public List<PhotoDto> getNewPhotos() {
@@ -50,7 +59,7 @@ public class PhotoGetterImpl implements PhotoGetter {
         for (PhotoDto photo : newPhotos) {
             if (validateSuffix(photo)) {
                 filteredPhotos.add(photo);
-                System.err.println("Loading file '" + photo.getFile().getName() + "'");
+                MeteoLogger.log("Loading file '" + photo.getFile().getName() + "'.");
             }
         }
         return filteredPhotos;

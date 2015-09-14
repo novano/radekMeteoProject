@@ -1,30 +1,33 @@
 package meteocontroller;
 
-import java.util.ArrayList;
-import java.util.List;
-import meteocontroller.dto.PhotoDto;
-
 /**
  *
  * @author Johnny
  */
 public class MeteoController {
 
-    /**
-     * @param args the command line arguments
-     */
+    private static SpringContext context;
+
+    public static SpringContext getContext() {
+        return context;
+    }
+
     public static void main(String[] args) {
-        PhotoGetter photoGetter = SpringContext.getPhotoGetter();
-        PhotoUploader photoUploader = SpringContext.getPhotoUploader();
+        MeteoLogger.log("Author Johnny Novak > jan.novak@ibacz.eu");
 
-        List<PhotoDto> newPhotos = new ArrayList<>();
+        context = SpringContext.getInstance();
 
-        if (photoGetter != null) {
-            newPhotos.addAll(photoGetter.getNewPhotos());
-        }
+        PhotoGetter photoGetter = new PhotoGetterImpl();
+        PhotoUploader photoUploader = new PhotoUploaderImpl();
 
-        if (photoUploader != null) {
-            photoUploader.uploadPhotos(newPhotos);
+        while (true) {
+            photoUploader.uploadPhotos(photoGetter.getNewPhotos());
+
+            try {
+                Thread.sleep(500L);
+            } catch (InterruptedException ex) {
+                MeteoLogger.log(ex);
+            }
         }
 
     }

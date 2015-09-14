@@ -8,6 +8,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
 import meteocontroller.dto.PhotoDto;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -20,10 +21,22 @@ public class PhotoUploaderImpl implements PhotoUploader {
 
     private Timer timer = new Timer(500);
 
-    private String ftpServerUrl = "93.188.160.41";
-    private int ftpServerPort = 21;
-    private String ftpServerLogin = "u340611274";
-    private String ftpServerPass = "samsungultra";
+    private String ftpServerUrl;
+    private int ftpServerPort;
+    private String ftpServerLogin;
+    private String ftpServerPass;
+
+    public PhotoUploaderImpl() {
+        SpringContext context = MeteoController.getContext();
+
+        ftpServerUrl = context.getProperty("ftp.server.url");
+        ftpServerPort = Integer.parseInt(context.getProperty("ftp.server.port"));
+        ftpServerLogin = context.getProperty("ftp.server.login");
+        ftpServerPass = context.getProperty("ftp.server.pass");
+
+        long period = Long.parseLong(context.getProperty("upload.timer.period"));
+        timer = new Timer(period);
+    }
 
     List<PhotoDto> bufferedPhotos = new ArrayList<>();
 
@@ -55,6 +68,7 @@ public class PhotoUploaderImpl implements PhotoUploader {
 
             try (InputStream inputStream = new FileInputStream(mostRecent.getFile())) {
                 client.storeFile(remoteFile, inputStream);
+                MeteoLogger.log("Uploading file '" + mostRecent.getFile().getName() + "' as remote file '" + ftpServerUrl + ":" + ftpServerPort + "/(...)/" + remoteFile + "'.");
             }
         } catch (IOException ex) {
         } finally {
