@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import meteocontroller.photo.uploader.ThreadMonitor;
 
 /**
  * Trida pro udrzeni instanci singletonu
@@ -22,8 +21,6 @@ public class SpringContext {
     private static String propsFile = "settings.properties";
 
     private static Map<String, String> props = new HashMap<>();
-
-    private static ThreadMonitor monitor = null;
 
     public static SpringContext getInstance() {
         MeteoLogger.log("Context init.");
@@ -51,19 +48,12 @@ public class SpringContext {
             MeteoLogger.log("Context init failed.");
         }
 
-        monitor = new ThreadMonitor();
-        new Thread(monitor).start();
-
         MeteoLogger.log("Context init successfull.");
         return springContext;
     }
 
     public String getProperty(String key) {
         return props.get(key);
-    }
-
-    public static ThreadMonitor getMonitor() {
-        return monitor;
     }
 
 }

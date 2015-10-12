@@ -1,13 +1,14 @@
 package meteocontroller.photo.uploader;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import meteocontroller.MeteoController;
 import meteocontroller.MeteoLogger;
 import meteocontroller.SpringContext;
@@ -29,8 +30,6 @@ public class PhotoUploaderImpl implements PhotoUploader {
     private static int ftpServerPort;
     private static String ftpServerLogin;
     private static String ftpServerPass;
-
-    private ThreadMonitor threadMonitor = SpringContext.getMonitor();
 
     public PhotoUploaderImpl() {
         SpringContext context = MeteoController.getContext();
@@ -55,8 +54,7 @@ public class PhotoUploaderImpl implements PhotoUploader {
             if (timer.activate()) {
                 PhotoDto photo = selectMostRecentPhoto(photos);
                 if (photo != null) {
-                    PhotoUploaderWorker photoUploaderWorker = new PhotoUploaderWorker(photo);
-                    threadMonitor.runThread(photoUploaderWorker);
+                    uploadPhotosToServer(photo);
                     bufferedPhotos.clear();
                 }
             }
@@ -64,32 +62,56 @@ public class PhotoUploaderImpl implements PhotoUploader {
         MeteoLogger.log("upload method end");
     }
 
-    public static synchronized FTPClient getConnection() {
+    private void uploadPhotosToServer(PhotoDto photo) {
+        MeteoLogger.log("upload timer activated");
 
-        FTPClient client;
         try {
-            client = new FTPClient();
-            MeteoLogger.log("connecting FTP server");
-            client.connect(ftpServerUrl, ftpServerPort);
-            MeteoLogger.log("logging FTP server");
-            client.login(ftpServerLogin, ftpServerPass);
-            client.enterLocalPassiveMode();
-            client.setFileType(FTP.BINARY_FILE_TYPE);
+            String remoteFile = "radekMeteo/actual.jpg";
+            try (InputStream inputStream = new FileInputStream(photo.getFile())) {
+                MeteoLogger.log("storing to FTP server");
+                client.storeFile(remoteFile, inputStream);
+                MeteoLogger.log("storing to FTP server completed");
+                MeteoLogger.log("Uploading file '" + photo.getFile().getName() + "' as remote file '" + remoteFile + "'.");
+            }
+        } catch (SocketException ex) {
+            closeConnection(client);
+            client = getConnection();
+            //TODO pockej treba 10s a pak az se znova pripoj .. sak vis 
+            uploadPhotosToServer(photo);
         } catch (IOException ex) {
             MeteoLogger.log(ex);
-            return null;
+        }
+
+    }
+
+    public FTPClient client = null;
+
+    private FTPClient getConnection() {
+        if (client == null) {
+            try {
+                client = new FTPClient();
+                MeteoLogger.log("connecting FTP server");
+                client.connect(ftpServerUrl, ftpServerPort);
+                MeteoLogger.log("logging FTP server");
+                client.login(ftpServerLogin, ftpServerPass);
+                client.enterLocalPassiveMode();
+                client.setFileType(FTP.BINARY_FILE_TYPE);
+            } catch (IOException ex) {
+                MeteoLogger.log(ex);
+                return null;
+            }
         }
 
         return client;
     }
 
-    public static synchronized void closeConnection(FTPClient client) {
+    private void closeConnection(FTPClient client) {
         if (client != null) {
             try {
                 client.logout();
                 client.disconnect();
             } catch (IOException ex) {
-                Logger.getLogger(PhotoUploaderImpl.class.getName()).log(Level.SEVERE, null, ex);
+                MeteoLogger.log(ex);
             }
         }
     }
