@@ -10,6 +10,7 @@
  */
 package meteocontroller;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -77,6 +78,21 @@ public class MeteoLogger {
         }
 
         lastLogFileOpen = System.currentTimeMillis();
-        fileLog = new PrintWriter(new FileWriter("meteo_log_" + dateFormatLogFile.format(lastLogFileOpen) + ".log"));
+        fileLog = new PrintWriter(new FileWriter(getLogFileName()));
+    }
+
+    private static String getLogFileName() {
+        String origFileName = "./log/meteo_log_" + dateFormatLogFile.format(lastLogFileOpen);
+        String actualFileName = origFileName;
+        String suffix = ".log";
+        int i = 0;
+
+        File f = new File(actualFileName + suffix);
+        while (f.exists()) {
+            actualFileName = origFileName + "_" + ++i;
+            f = new File(actualFileName + suffix);
+        }
+
+        return actualFileName + suffix;
     }
 }

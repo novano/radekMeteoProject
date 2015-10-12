@@ -1,13 +1,17 @@
-package meteocontroller;
+package meteocontroller.photo.uploader;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import meteocontroller.MeteoController;
+import meteocontroller.MeteoLogger;
+import meteocontroller.SpringContext;
+import meteocontroller.Timer;
 
 import meteocontroller.dto.PhotoDto;
 import org.apache.commons.net.ftp.FTP;
@@ -21,10 +25,12 @@ public class PhotoUploaderImpl implements PhotoUploader {
 
     private Timer timer;
 
-    private String ftpServerUrl;
-    private int ftpServerPort;
-    private String ftpServerLogin;
-    private String ftpServerPass;
+    private static String ftpServerUrl;
+    private static int ftpServerPort;
+    private static String ftpServerLogin;
+    private static String ftpServerPass;
+
+    private ThreadMonitor threadMonitor = SpringContext.getMonitor();
 
     public PhotoUploaderImpl() {
         SpringContext context = MeteoController.getContext();
@@ -42,46 +48,50 @@ public class PhotoUploaderImpl implements PhotoUploader {
 
     @Override
     public void uploadPhotos(List<PhotoDto> photos) {
-        bufferedPhotos.addAll(photos);
+        MeteoLogger.log("upload method start with " + photos.size() + " files");
+        if (photos != null && photos.size() > 0) {
+            bufferedPhotos.addAll(photos);
 
-        if (timer.activate()) {
-            uploadPhotosToServer(bufferedPhotos);
-            bufferedPhotos.clear();
-        }
-    }
-
-    private void uploadPhotosToServer(List<PhotoDto> photos) {
-        PhotoDto mostRecent = selectMostRecentPhoto(photos);
-        if (mostRecent == null) {
-            return;
-        }
-
-        FTPClient client = new FTPClient();
-        try {
-            client.connect(ftpServerUrl, ftpServerPort);
-            client.login(ftpServerLogin, ftpServerPass);
-            client.enterLocalPassiveMode();
-            client.setFileType(FTP.BINARY_FILE_TYPE);
-
-            String remoteFile = "radekMeteo/actual.jpg";
-
-            try (InputStream inputStream = new FileInputStream(mostRecent.getFile())) {
-                client.storeFile(remoteFile, inputStream);
-                MeteoLogger.log("Uploading file '" + mostRecent.getFile().getName() + "' as remote file '" + ftpServerUrl + ":" + ftpServerPort + "/(...)/" + remoteFile + "'.");
-            }
-        } catch (IOException ex) {
-            MeteoLogger.log(ex);
-        } finally {
-            if (client.isConnected()) {
-                try {
-                    client.logout();
-                    client.disconnect();
-                } catch (IOException ex) {
-                    MeteoLogger.log(ex);
+            if (timer.activate()) {
+                PhotoDto photo = selectMostRecentPhoto(photos);
+                if (photo != null) {
+                    PhotoUploaderWorker photoUploaderWorker = new PhotoUploaderWorker(photo);
+                    threadMonitor.runThread(photoUploaderWorker);
+                    bufferedPhotos.clear();
                 }
             }
         }
+        MeteoLogger.log("upload method end");
+    }
 
+    public static synchronized FTPClient getConnection() {
+
+        FTPClient client;
+        try {
+            client = new FTPClient();
+            MeteoLogger.log("connecting FTP server");
+            client.connect(ftpServerUrl, ftpServerPort);
+            MeteoLogger.log("logging FTP server");
+            client.login(ftpServerLogin, ftpServerPass);
+            client.enterLocalPassiveMode();
+            client.setFileType(FTP.BINARY_FILE_TYPE);
+        } catch (IOException ex) {
+            MeteoLogger.log(ex);
+            return null;
+        }
+
+        return client;
+    }
+
+    public static synchronized void closeConnection(FTPClient client) {
+        if (client != null) {
+            try {
+                client.logout();
+                client.disconnect();
+            } catch (IOException ex) {
+                Logger.getLogger(PhotoUploaderImpl.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
 
     private PhotoDto selectMostRecentPhoto(List<PhotoDto> photos) {

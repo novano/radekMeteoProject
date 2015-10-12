@@ -1,4 +1,4 @@
-package meteocontroller;
+package meteocontroller.photo.getter;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,6 +10,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import meteocontroller.MeteoController;
+import meteocontroller.MeteoLogger;
+import meteocontroller.SpringContext;
 
 import meteocontroller.dto.PhotoDto;
 
@@ -38,10 +41,12 @@ public class PhotoGetterImpl implements PhotoGetter {
         newPhotos = filterPhotos(newPhotos);
         proceedPhotos(newPhotos);
         clearTmpFolder();
+        MeteoLogger.log("Scaned " + newPhotos.size() + " files.");
         return newPhotos;
     }
 
     private List<PhotoDto> scanFolder() {
+        MeteoLogger.log("Scan folder.");
         List<PhotoDto> result = new ArrayList<>();
         File scanFolder = new File(SCAN_FOLDER_PATH);
         if (scanFolder.isDirectory()) {

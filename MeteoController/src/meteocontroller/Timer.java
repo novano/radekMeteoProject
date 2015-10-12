@@ -15,7 +15,7 @@ public class Timer {
         this.period = period;
     }
 
-    boolean activate() {
+    public boolean activate() {
         Date now = new Date();
         if (nextActivation.before(now)) {
             nextActivation = new Date(now.getTime() + period);
